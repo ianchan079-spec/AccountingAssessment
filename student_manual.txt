@@ -1,0 +1,46 @@
+# Accountancy Capstone Simulation - Student Manual
+
+Welcome to the Accountancy Capstone Simulation! This manual will guide you through completing your assignment.
+
+## Phase 1: Setup & Scenario Generation
+1. Launch the application and navigate to **Tab 1: Setup**.
+2. Enter your unique **Student ID** (e.g., SIT12345).
+3. The system will generate your personalized business case containing 20 transactions for your first month of operations.
+4. **Download the COA Template**. This is the strict Chart of Accounts you must use.
+
+## Phase 2: Processing Transactions
+1. Open the downloaded `coa_template.csv` in Excel or Google Sheets.
+2. Analyze the 20 transactions from Tab 1. Record your journal entries and post them to your Trial Balance template.
+3. Ensure that your final Trial Balance balances (Total Debits = Total Credits).
+4. Do NOT change the names of the accounts in the template.
+
+## Phase 3: Submission & Audit
+1. Navigate to **Tab 2: Submission**.
+2. Upload your completed Trial Balance CSV file.
+3. Navigate to **Tab 3: Results & Leaderboard** and click **Run Master Auditor**.
+4. Review your Score and any specific Pedagogical Feedback indicating areas where your logic may have deviated (especially for TVM or Adjusting entries).
+
+## Phase 4: Leaderboard
+- The top 10 most profitable and accurate businesses will be displayed on the Leaderboard.
+- Your profit calculation is heavily dependent on correctly recording revenues and expenses.
+
+Good luck!
+
+## Xero Quick Start Guide
+
+### Phase 1: Setup
+1. **Sign Up**: Create a free 30-day Xero trial account.
+2. **Organization Name**: You MUST name your organization using the format: [Student ID] - [Full Name] Consultancy.
+3. **Import COA**: Go to Accounting > Advanced > Chart of Accounts and use the "Import" function with the CSV template downloaded from this portal.
+
+### Phase 2: Recording Entries
+1. **Operational**: Record daily sales invoices and bills under Business > Invoices/Bills.
+2. **Journal Entries**: For the Loan (TVM) and Adjusting Entries, use Accounting > Reports > Journal Report > Add New Journal.
+3. **Note**: Ensure your Jan 31st interest accrual journal entry matches your TVM calculations exactly.
+
+### Phase 3: The Export (Submission)
+1. Go to Accounting > Reports > Trial Balance.
+2. Select the date: 31 Jan 2026.
+3. Click Export > CSV.
+4. **Crucial**: Open the CSV and ensure the column headers match the "COA Template" before uploading to the portal.
+5. **Verification**: Export the "Detailed Journal Report" from Xero as a PDF. Both files are required for submission.
