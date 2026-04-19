@@ -10,6 +10,17 @@ def get_seed_from_id(student_id: str, trimester_code: str) -> int:
     return int(hash_obj.hexdigest()[:16], 16)
 
 class AccountancyGenerator:
+    STANDARD_COA = [
+        "Cash", "Short-Term Investments", "Accounts Receivable", "Interest Receivable", 
+        "Supplies", "Prepaid Rent", "Prepaid Insurance", "Equipment", "Accumulated Depreciation", 
+        "Accounts Payable", "Notes Payable", "Salaries Payable", 
+        "Common Stock", "Dividends", 
+        "Service Revenue", "Interest Revenue", 
+        "Depreciation Expense", "Interest Expense", "Miscellaneous Expense", 
+        "Rent Expense", "Salaries Expense", "Supplies Expense", 
+        "Utilities Expense", "Advertising Expense", "Insurance Expense"
+    ]
+
     def __init__(self, student_id: str, trimester_code: str = "T1_2026"):
         self.student_id = student_id
         self.trimester_code = trimester_code
@@ -131,6 +142,19 @@ class AccountancyGenerator:
             self.templates[f'OP_RENT_{i}'] = {'cat': 'OP', 'func': op_rent}
             self.templates[f'ADJ_RENT_{i}'] = {'cat': 'ADJ', 'dep': f'OP_RENT_{i}', 'func': adj_rent}
 
+        # Prepaid Insurance
+        for i, months in [(1, 6), (2, 12)]:
+            def op_ins(ctx, i=i, m=months):
+                monthly = self.rng.randint(10, 30) * 10
+                total = monthly * m
+                ctx[f'ins_{i}_monthly'] = monthly
+                self._record_transaction(1, f"Paid {m} months business insurance in advance: ${total:,}.", [('Prepaid Insurance', total)], [('Cash', total)])
+            def adj_ins(ctx, i=i):
+                monthly = ctx[f'ins_{i}_monthly']
+                self._record_transaction(31, f"Record 1 month of expired insurance (policy {i}).", [('Insurance Expense', monthly)], [('Prepaid Insurance', monthly)])
+            self.templates[f'OP_INS_{i}'] = {'cat': 'OP', 'func': op_ins}
+            self.templates[f'ADJ_INS_{i}'] = {'cat': 'ADJ', 'dep': f'OP_INS_{i}', 'func': adj_ins}
+
         # Supplies
         for i in range(1, 3):
             def op_sup(ctx, i=i):
@@ -202,6 +226,15 @@ class AccountancyGenerator:
                 day = self.rng.randint(2, 25)
                 self._record_transaction(day, f"Paid utility bill region {idx} for ${amt:,} cash.", [('Utilities Expense', amt)], [('Cash', amt)])
             self.templates[f'IND_UTIL_{i}'] = {'cat': 'IND_OP', 'func': util, 'count': 1}
+
+        # Advertising
+        for i in range(2):
+            def adv_exp(ctx, idx=i):
+                amt = self.rng.randint(2, 10) * 100
+                day = self.rng.randint(2, 25)
+                desc = self.rng.choice(["Paid for Google Ads campaign", "Printed promotional brochures"])
+                self._record_transaction(day, f"{desc} costing ${amt:,}.", [('Advertising Expense', amt)], [('Cash', amt)])
+            self.templates[f'IND_ADV_{i}'] = {'cat': 'IND_OP', 'func': adv_exp, 'count': 1}
 
         # Misc & Dividends
         for i in range(2):
@@ -290,10 +323,12 @@ class AccountancyGenerator:
             self.transactions_text.append(f"{i}. [{day_str}] {desc}")
             
             for acc, amt in entry['debits']:
+                assert acc in self.STANDARD_COA, f"CRITICAL: '{acc}' not in STANDARD_COA!"
                 self.journal.append({'date': day_str, 'description': desc, 'account': acc, 'debit': amt, 'credit': 0.0})
                 self._add_entry(acc, amt, 'Debit')
                 
             for acc, amt in entry['credits']:
+                assert acc in self.STANDARD_COA, f"CRITICAL: '{acc}' not in STANDARD_COA!"
                 self.journal.append({'date': day_str, 'description': desc, 'account': acc, 'debit': 0.0, 'credit': amt})
                 self._add_entry(acc, amt, 'Credit')
 

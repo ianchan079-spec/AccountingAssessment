@@ -4,8 +4,8 @@ from generator import AccountancyGenerator
 
 class Auditor:
     def __init__(self, student_id: str):
-        self.student_id = student_id
-        self.generator = AccountancyGenerator(student_id)
+        self.student_id = student_id.upper()
+        self.generator = AccountancyGenerator(self.student_id)
         self.generator.generate()
         self.truth_df = self.generator.get_ground_truth()
         
@@ -14,14 +14,15 @@ class Auditor:
             'Notes Payable', 'Interest Expense', 'Interest Receivable', 
             'Interest Revenue', 'Short-Term Investments', 'Supplies Expense', 
             'Prepaid Rent', 'Rent Expense', 'Depreciation Expense', 
-            'Accumulated Depreciation', 'Salaries Payable'
+            'Accumulated Depreciation', 'Salaries Payable',
+            'Prepaid Insurance', 'Insurance Expense'
         ]
         
         self.op_accounts = [
             'Cash', 'Accounts Receivable', 'Accounts Payable', 
             'Service Revenue', 'Salaries Expense', 'Utilities Expense', 
             'Common Stock', 'Equipment', 'Dividends', 
-            'Miscellaneous Expense', 'Supplies'
+            'Miscellaneous Expense', 'Supplies', 'Advertising Expense'
         ]
 
     def audit(self, student_df: pd.DataFrame) -> Tuple[float, list]:
@@ -40,14 +41,26 @@ class Auditor:
         # Convert true df to dictionary of account -> balance (positive for debit, negative for credit)
         truth_dict = {}
         for _, row in self.truth_df.iterrows():
-            truth_dict[row['Account']] = round(row['Debit'] - row['Credit'], 2)
+            truth_dict[str(row['Account']).strip().upper()] = round(row['Debit'] - row['Credit'], 2)
             
         # Convert student df to dictionary
         student_dict = {}
         for _, row in student_df.iterrows():
-            debit = float(str(row['Debit']).replace(',', '')) if pd.notnull(row['Debit']) and str(row['Debit']).strip() != '' else 0.0
-            credit = float(str(row['Credit']).replace(',', '')) if pd.notnull(row['Credit']) and str(row['Credit']).strip() != '' else 0.0
-            student_dict[row['Account']] = round(debit - credit, 2)
+            acc_key = str(row['Account']).strip().upper()
+            d_val = row['Debit']
+            c_val = row['Credit']
+            
+            debit = 0.0
+            if pd.notna(d_val):
+                d_str = str(d_val).replace(',', '').replace('$', '').strip()
+                if d_str: debit = float(d_str)
+                
+            credit = 0.0
+            if pd.notna(c_val):
+                c_str = str(c_val).replace(',', '').replace('$', '').strip()
+                if c_str: credit = float(c_str)
+                
+            student_dict[acc_key] = round(debit - credit, 2)
             
         # Scoring variables
         tvm_adj_correct = 0
@@ -58,10 +71,19 @@ class Auditor:
         
         # Evaluate all accounts
         all_accounts = self.tvm_adj_accounts + self.op_accounts
+        upper_standard_coa = [a.upper() for a in all_accounts]
+        
+        # Check for unmapped student accounts
+        for student_acc, val in student_dict.items():
+            if abs(val) > 0 and student_acc not in upper_standard_coa:
+                feedback.append(f"❌ '{student_acc}': Invalid Account Name: Please refer to the standardized Chart of Accounts.")
         
         for acc in all_accounts:
-            expected = truth_dict.get(acc, 0.0)
-            actual = student_dict.get(acc, 0.0)
+            acc_key = acc.strip().upper()
+            expected = truth_dict.get(acc_key, 0.0)
+            actual = student_dict.get(acc_key, 0.0)
+            
+            print(f"Comparing '{acc}': Student [{actual}] vs Ground Truth [{expected}]")
             
             is_correct = (abs(expected - actual) <= 0.05) # Add small tolerance for float issues
             
@@ -80,29 +102,29 @@ class Auditor:
                     
         # --- Specific Pedagogical Feedback ---
         # TVM Interest Expense check
-        notes_payable_expected = truth_dict.get('Notes Payable', 0.0)
-        notes_payable_actual = student_dict.get('Notes Payable', 0.0)
-        int_exp_expected = truth_dict.get('Interest Expense', 0.0)
-        int_exp_actual = student_dict.get('Interest Expense', 0.0)
+        notes_payable_expected = truth_dict.get('NOTES PAYABLE', 0.0)
+        notes_payable_actual = student_dict.get('NOTES PAYABLE', 0.0)
+        int_exp_expected = truth_dict.get('INTEREST EXPENSE', 0.0)
+        int_exp_actual = student_dict.get('INTEREST EXPENSE', 0.0)
         
         # If Notes Payable is right (or close) but Interest Expense is wrong
         if abs(notes_payable_expected - notes_payable_actual) <= 0.05 and abs(int_exp_expected - int_exp_actual) > 0.05:
              feedback.append("💡 Pedagogical Note: Your loan principal (Notes Payable) is correct, but your Interest Expense accrual is incorrect. Check your TVM calculation for PMT and ensure you split out interest vs. principal properly for the first payment.")
 
         # Depreciation logic check
-        equip_expected = truth_dict.get('Equipment', 0.0)
-        equip_actual = student_dict.get('Equipment', 0.0)
-        depr_exp_expected = truth_dict.get('Depreciation Expense', 0.0)
-        depr_exp_actual = student_dict.get('Depreciation Expense', 0.0)
+        equip_expected = truth_dict.get('EQUIPMENT', 0.0)
+        equip_actual = student_dict.get('EQUIPMENT', 0.0)
+        depr_exp_expected = truth_dict.get('DEPRECIATION EXPENSE', 0.0)
+        depr_exp_actual = student_dict.get('DEPRECIATION EXPENSE', 0.0)
         
         if abs(equip_expected - equip_actual) <= 0.05 and abs(depr_exp_expected - depr_exp_actual) > 0.05:
              feedback.append("💡 Pedagogical Note: The Equipment cost is correct, but Depreciation Expense is incorrect. Remember the policy: 5 years straight-line, zero salvage value. Calculate (Cost / (5 * 12)).")
 
         # Adjusting supplies check
-        supplies_expected = truth_dict.get('Supplies', 0.0)
-        supplies_actual = student_dict.get('Supplies', 0.0)
-        supplies_exp_expected = truth_dict.get('Supplies Expense', 0.0)
-        supplies_exp_actual = student_dict.get('Supplies Expense', 0.0)
+        supplies_expected = truth_dict.get('SUPPLIES', 0.0)
+        supplies_actual = student_dict.get('SUPPLIES', 0.0)
+        supplies_exp_expected = truth_dict.get('SUPPLIES EXPENSE', 0.0)
+        supplies_exp_actual = student_dict.get('SUPPLIES EXPENSE', 0.0)
 
         if abs(supplies_expected - supplies_actual) > 0.05 and abs(supplies_exp_expected - supplies_exp_actual) > 0.05:
             # Maybe they missed the adjusting entry entirely?

@@ -100,16 +100,16 @@ with tab1:
         st.subheader("Download Template")
         st.write("Use this standardized Chart of Accounts for your Trial Balance to ensure proper grading. Using ad-hoc account names is poor practice and will fail the audit.")
         
-        try:
-            with open("coa_template.csv", "rb") as f:
-                st.download_button(
-                    label="Download COA Template (CSV)",
-                    data=f,
-                    file_name="coa_template.csv",
-                    mime="text/csv"
-                )
-        except FileNotFoundError:
-            st.error("Template file not found on server.")
+        coa_csv = "Account,Debit,Credit\n"
+        for acc in AccountancyGenerator.STANDARD_COA:
+            coa_csv += f"{acc},0,0\n"
+            
+        st.download_button(
+            label="Download COA Template (CSV)",
+            data=coa_csv.encode('utf-8'),
+            file_name="coa_template.csv",
+            mime="text/csv"
+        )
 
 with tab2:
     st.header("Upload Submission Files")
